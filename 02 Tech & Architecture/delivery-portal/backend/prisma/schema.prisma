@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  phone     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
+}
+
+model DeliveryPartner {
+  id          String    @id @default(cuid())
+  name        String
+  email       String    @unique
+  password    String
+  phone       String    @default("")
+  vehicle     String    @default("Bike")
+  isAvailable Boolean   @default(true)
+  rating      Float     @default(5.0)
+  totalEarned Float     @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  orders      Order[]
+  earnings    Earning[]
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id            String           @id @default(cuid())
+  trackingId    String           @unique
+  customerId    String
+  customer      User             @relation(fields: [customerId], references: [id])
+  partnerId     String?
+  partner       DeliveryPartner? @relation(fields: [partnerId], references: [id])
+  pickupAddress String
+  dropAddress   String
+  packageType   PackageType
+  weight        Float            @default(1)
+  price         Float
+  status        OrderStatus      @default(PENDING)
+  notes         String           @default("")
+  isPaid        Boolean          @default(false)
+  paymentId     String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  statusHistory StatusHistory[]
+  earning       Earning?
+}
+
+model StatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id])
+  status    OrderStatus
+  message   String      @default("")
+  createdAt DateTime    @default(now())
+}
+
+model Earning {
+  id        String          @id @default(cuid())
+  partnerId String
+  partner   DeliveryPartner @relation(fields: [partnerId], references: [id])
+  orderId   String          @unique
+  order     Order           @relation(fields: [orderId], references: [id])
+  amount    Float
+  createdAt DateTime        @default(now())
+}
+
+enum PackageType {
+  DOCUMENT
+  SMALL
+  MEDIUM
+  LARGE
+  FRAGILE
+}
+
+enum OrderStatus {
+  PENDING
+  ASSIGNED
+  PICKED_UP
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
